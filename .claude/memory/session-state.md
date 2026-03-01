@@ -2,32 +2,32 @@
 
 ## Status: PAUSED
 
-## Project: Persistent Chrome CDP + Browser Automation
-Run a persistent Chrome instance with CDP enabled so NanoClaw agents can automate real browser sessions (LinkedIn, Miro, etc.). Log in once — agents reuse the session.
+## Project: Connect NanoClaw to gogcli (Google Services)
 
-## Decision Log
-- Started with headless Chrome on Hostinger VPS (187.77.108.22)
-- User saw OpenClaw's approach: Docker container (Ubuntu + LXDE + noVNC) — better because visual login + CDP
-- User wants residential IP — decided to run everything on local Mac laptop (home ISP = residential)
-- User paused before pulling Docker image — reconsidering approach
+Add all Google services as tools available to NanoClaw agents via gogcli CLI.
+4 Google accounts: personal, work-ai, work-lokalise, personal2.
 
 ## Completed
-- Chrome 145 installed on VPS (may remove later)
-- chrome-cdp.service running on VPS (may remove later)
-- playwright-core installed on VPS
+- Phase 1: gogcli binary install added to `container/Dockerfile`
+- Phase 2: Config mount + `GOG_KEYRING_PASSWORD` env var in `src/container-runner.ts`
+- Phase 3: `container/skills/google/SKILL.md` created with full command reference
+- Committed and pushed: `400f7d2 feat: add Google services (gogcli) integration`
+- Phase 0 partial: gogcli v0.11.0 installed on VPS, file-based keyring configured
 
-## Not Yet Done
-- Docker container setup (Ubuntu + LXDE + noVNC + Chrome + CDP) on Mac
-- browser-cdp.mjs CLI helper script
-- browser-cdp SKILL.md for NanoClaw
-- Deploy and verify
+## Not Yet Done (Phase 0 continues)
+- User needs to create GCP OAuth Desktop App credentials (client_secret.json)
+- `gog auth credentials <path>` on VPS
+- Set a keyring password (will be stored in .env)
+- Auth 4 accounts with `--manual`:
+  - `gog auth add pantropov@gmail.com --manual`
+  - `gog auth add piotr.a@wonderful.ai --manual` (Okta SSO)
+  - `gog auth add petr@lokalise.com --manual` (Okta SSO)
+  - `gog auth add stul4ak@gmail.com --manual`
+- Set aliases (personal, work-ai, work-lokalise, personal2)
+- Add `GOG_KEYRING_PASSWORD=<password>` to `/root/nanoclaw/.env`
+- Phase 4: Pull, rebuild container, restart on VPS
+- Phase 5: Verify (test inside container + test via WhatsApp/Telegram)
 
 ## Connections
 - VPS: `ssh root@187.77.108.22` (Hostinger, Ubuntu)
 - NanoClaw repo: `~/nanoclaw`
-- Docker Desktop: must be started manually by user before container work
-- Chrome CDP on VPS: `curl http://localhost:9222/json/version` (via SSH)
-
-## Key Details
-- Base image candidate: dorowu/ubuntu-desktop-lxde-vnc (user cancelled pull, may want different approach)
-- Ports planned: 6080 (noVNC), 9222 (CDP), bound to 127.0.0.1
