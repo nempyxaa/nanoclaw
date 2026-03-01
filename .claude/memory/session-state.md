@@ -13,6 +13,7 @@ Add all Google services as tools available to NanoClaw agents via gogcli CLI.
 - Phase 3: `container/skills/google/SKILL.md` created with full command reference
 - Committed and pushed: `400f7d2 feat: add Google services (gogcli) integration`
 - Phase 0 partial: gogcli v0.11.0 installed on VPS, file-based keyring configured
+- Parallel AI: MCP integration code added (`3a23978`), needs API key in .env
 
 ## Not Yet Done (Phase 0 continues)
 - User needs to create GCP OAuth Desktop App credentials (client_secret.json)
@@ -25,6 +26,7 @@ Add all Google services as tools available to NanoClaw agents via gogcli CLI.
   - `gog auth add stul4ak@gmail.com --manual`
 - Set aliases (personal, work-ai, work-lokalise, personal2)
 - Add `GOG_KEYRING_PASSWORD=<password>` to `/root/nanoclaw/.env`
+- Get Parallel AI API key from https://platform.parallel.ai, add `PARALLEL_API_KEY=<key>` to `/root/nanoclaw/.env`
 - Phase 4: Pull, rebuild container, restart on VPS
 - Phase 5: Verify (test inside container + test via WhatsApp/Telegram)
 
