@@ -229,9 +229,13 @@ function buildContainerArgs(
   args.push('-e', `TZ=${TIMEZONE}`);
 
   // Pass gogcli keyring password for Google services
-  const gogEnv = readEnvFile(['GOG_KEYRING_PASSWORD']);
-  if (gogEnv.GOG_KEYRING_PASSWORD) {
-    args.push('-e', `GOG_KEYRING_PASSWORD=${gogEnv.GOG_KEYRING_PASSWORD}`);
+  // Pass Parallel AI API key for web research MCP servers
+  const extraEnv = readEnvFile(['GOG_KEYRING_PASSWORD', 'PARALLEL_API_KEY']);
+  if (extraEnv.GOG_KEYRING_PASSWORD) {
+    args.push('-e', `GOG_KEYRING_PASSWORD=${extraEnv.GOG_KEYRING_PASSWORD}`);
+  }
+  if (extraEnv.PARALLEL_API_KEY) {
+    args.push('-e', `PARALLEL_API_KEY=${extraEnv.PARALLEL_API_KEY}`);
   }
 
   // Run as host user so bind-mounted files are accessible.
