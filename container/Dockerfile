@@ -25,6 +25,11 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
+# Install gogcli (Google services CLI)
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL "https://github.com/steipete/gogcli/releases/latest/download/gogcli_0.11.0_linux_${ARCH}.tar.gz" \
+    | tar -xz -C /usr/local/bin gog
+
 # Set Chromium path for agent-browser
 ENV AGENT_BROWSER_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium

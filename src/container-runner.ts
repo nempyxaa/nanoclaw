@@ -4,6 +4,7 @@
  */
 import { ChildProcess, exec, spawn } from 'child_process';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 
 import {
@@ -144,6 +145,17 @@ function buildVolumeMounts(
       fs.cpSync(srcDir, dstDir, { recursive: true });
     }
   }
+
+  // Mount gogcli config (Google services credentials + tokens)
+  const gogcliDir = path.join(os.homedir(), '.config', 'gogcli');
+  if (fs.existsSync(gogcliDir)) {
+    mounts.push({
+      hostPath: gogcliDir,
+      containerPath: '/home/node/.config/gogcli',
+      readonly: false, // needs to refresh OAuth tokens
+    });
+  }
+
   mounts.push({
     hostPath: groupSessionsDir,
     containerPath: '/home/node/.claude',
@@ -215,6 +227,12 @@ function buildContainerArgs(
 
   // Pass host timezone so container's local time matches the user's
   args.push('-e', `TZ=${TIMEZONE}`);
+
+  // Pass gogcli keyring password for Google services
+  const gogEnv = readEnvFile(['GOG_KEYRING_PASSWORD']);
+  if (gogEnv.GOG_KEYRING_PASSWORD) {
+    args.push('-e', `GOG_KEYRING_PASSWORD=${gogEnv.GOG_KEYRING_PASSWORD}`);
+  }
 
   // Run as host user so bind-mounted files are accessible.
   // Skip when running as root (uid 0), as the container's node user (uid 1000),
