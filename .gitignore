@@ -33,3 +33,12 @@ groups/global/*
 .nanoclaw/
 
 agents-sdk-docs
+
+# Backup files
+*.backup
+*.bak
+
+# Debug/check scripts
+check-*.mjs
+check-*.js
+update-trigger.mjs
