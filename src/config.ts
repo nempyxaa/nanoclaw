@@ -12,6 +12,7 @@ const envConfig = readEnvFile([
   'TELEGRAM_BOT_TOKEN',
   'TELEGRAM_ONLY',
   'ANFISA_WEBHOOK_URL',
+  'ANFISA_WEBHOOK_SECRET',
 ]);
 
 export const ASSISTANT_NAME =
@@ -78,3 +79,5 @@ export const TELEGRAM_ONLY =
 // Anfisa webhook for bot-to-bot communication
 export const ANFISA_WEBHOOK_URL =
   process.env.ANFISA_WEBHOOK_URL || envConfig.ANFISA_WEBHOOK_URL || '';
+export const ANFISA_WEBHOOK_SECRET =
+  process.env.ANFISA_WEBHOOK_SECRET || envConfig.ANFISA_WEBHOOK_SECRET || '';

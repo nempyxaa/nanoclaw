@@ -1,4 +1,4 @@
-import { ANFISA_WEBHOOK_URL } from './config.js';
+import { ANFISA_WEBHOOK_SECRET, ANFISA_WEBHOOK_URL } from './config.js';
 import { logger } from './logger.js';
 
 /**
@@ -12,14 +12,20 @@ export function notifyAnfisa(
 ): void {
   if (!ANFISA_WEBHOOK_URL) return;
 
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (ANFISA_WEBHOOK_SECRET) {
+    headers['X-Webhook-Secret'] = ANFISA_WEBHOOK_SECRET;
+  }
+
   fetch(ANFISA_WEBHOOK_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
-      source: 'gevo',
-      chatJid,
-      text,
-      sender: sender || 'Gevo',
+      message: text,
+      chatId: chatJid,
+      from: sender || 'gevo',
       timestamp: new Date().toISOString(),
     }),
     signal: AbortSignal.timeout(5000),
