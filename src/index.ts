@@ -527,11 +527,17 @@ async function main(): Promise<void> {
     },
   });
   startIpcWatcher({
-    sendMessage: (jid, text) => {
+    sendMessage: async (jid, text) => {
       const channel = findChannel(channels, jid);
       if (!channel) throw new Error(`No channel for JID: ${jid}`);
       notifyAnfisa(jid, text);
       return channel.sendMessage(jid, text);
+    },
+    editMessage: async (jid, messageId, text) => {
+      const channel = findChannel(channels, jid);
+      if (!channel) throw new Error(`No channel for JID: ${jid}`);
+      if (!channel.editMessage) throw new Error(`Channel ${channel.name} doesn't support editing`);
+      await channel.editMessage(jid, messageId, text);
     },
     registeredGroups: () => registeredGroups,
     registerGroup,

@@ -32,7 +32,8 @@ vi.mock('grammy', () => ({
     errorHandler: Handler | null = null;
 
     api = {
-      sendMessage: vi.fn().mockResolvedValue(undefined),
+      sendMessage: vi.fn().mockResolvedValue({ message_id: 123 }),
+      editMessageText: vi.fn().mockResolvedValue(undefined),
       sendChatAction: vi.fn().mockResolvedValue(undefined),
     };
 
@@ -704,7 +705,17 @@ describe('TelegramChannel', () => {
       expect(currentBot().api.sendMessage).toHaveBeenCalledWith(
         '100200300',
         'Hello',
+        { parse_mode: 'Markdown' },
       );
+    });
+
+    it('returns message_id from sent message', async () => {
+      const opts = createTestOpts();
+      const channel = new TelegramChannel('test-token', opts);
+      await channel.connect();
+
+      const result = await channel.sendMessage('tg:100200300', 'Hello');
+      expect(result).toBe('123');
     });
 
     it('strips tg: prefix from JID', async () => {
@@ -717,6 +728,7 @@ describe('TelegramChannel', () => {
       expect(currentBot().api.sendMessage).toHaveBeenCalledWith(
         '-1001234567890',
         'Group message',
+        { parse_mode: 'Markdown' },
       );
     });
 
@@ -733,11 +745,13 @@ describe('TelegramChannel', () => {
         1,
         '100200300',
         'x'.repeat(4096),
+        { parse_mode: 'Markdown' },
       );
       expect(currentBot().api.sendMessage).toHaveBeenNthCalledWith(
         2,
         '100200300',
         'x'.repeat(904),
+        { parse_mode: 'Markdown' },
       );
     });
 
@@ -752,19 +766,33 @@ describe('TelegramChannel', () => {
       expect(currentBot().api.sendMessage).toHaveBeenCalledTimes(1);
     });
 
-    it('handles send failure gracefully', async () => {
+    it('falls back to plain text when Markdown fails', async () => {
       const opts = createTestOpts();
       const channel = new TelegramChannel('test-token', opts);
       await channel.connect();
 
       currentBot().api.sendMessage.mockRejectedValueOnce(
+        new Error('Markdown parse error'),
+      );
+
+      // Should not throw — falls back to plain text
+      const result = await channel.sendMessage('tg:100200300', 'Will retry');
+      expect(result).toBe('123');
+      expect(currentBot().api.sendMessage).toHaveBeenCalledTimes(2);
+    });
+
+    it('handles complete send failure gracefully', async () => {
+      const opts = createTestOpts();
+      const channel = new TelegramChannel('test-token', opts);
+      await channel.connect();
+
+      currentBot().api.sendMessage.mockRejectedValue(
         new Error('Network error'),
       );
 
       // Should not throw
-      await expect(
-        channel.sendMessage('tg:100200300', 'Will fail'),
-      ).resolves.toBeUndefined();
+      const result = await channel.sendMessage('tg:100200300', 'Will fail');
+      expect(result).toBeUndefined();
     });
 
     it('does nothing when bot is not initialized', async () => {

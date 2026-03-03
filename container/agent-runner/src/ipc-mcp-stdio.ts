@@ -14,6 +14,7 @@ import { CronExpressionParser } from 'cron-parser';
 const IPC_DIR = '/workspace/ipc';
 const MESSAGES_DIR = path.join(IPC_DIR, 'messages');
 const TASKS_DIR = path.join(IPC_DIR, 'tasks');
+const RESPONSES_DIR = path.join(IPC_DIR, 'responses');
 
 // Context from environment variables (set by the agent runner)
 const chatJid = process.env.NANOCLAW_CHAT_JID!;
@@ -34,6 +35,25 @@ function writeIpcFile(dir: string, data: object): string {
   return filename;
 }
 
+function waitForResponse(filePath: string, timeoutMs: number): Promise<string | null> {
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const check = () => {
+      try {
+        if (fs.existsSync(filePath)) {
+          const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+          fs.unlinkSync(filePath);
+          resolve(data.messageId || null);
+          return;
+        }
+      } catch { /* retry */ }
+      if (Date.now() - start > timeoutMs) { resolve(null); return; }
+      setTimeout(check, 200);
+    };
+    check();
+  });
+}
+
 const server = new McpServer({
   name: 'nanoclaw',
   version: '1.0.0',
@@ -47,18 +67,46 @@ server.tool(
     sender: z.string().optional().describe('Your role/identity name (e.g. "Researcher"). When set, messages appear from a dedicated bot in Telegram.'),
   },
   async (args) => {
+    const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const data: Record<string, string | undefined> = {
       type: 'message',
       chatJid,
       text: args.text,
       sender: args.sender || undefined,
       groupFolder,
+      requestId,
       timestamp: new Date().toISOString(),
     };
 
     writeIpcFile(MESSAGES_DIR, data);
 
+    const responseFile = path.join(RESPONSES_DIR, `${requestId}.json`);
+    const messageId = await waitForResponse(responseFile, 10000);
+
+    if (messageId) {
+      return { content: [{ type: 'text' as const, text: `Message sent. message_id=${messageId}` }] };
+    }
     return { content: [{ type: 'text' as const, text: 'Message sent.' }] };
+  },
+);
+
+server.tool(
+  'edit_message',
+  'Edit a previously sent message. Use the message_id returned by send_message. Only works for messages sent by the bot.',
+  {
+    message_id: z.string().describe('The message_id returned by send_message'),
+    text: z.string().describe('The new message text'),
+  },
+  async (args) => {
+    writeIpcFile(MESSAGES_DIR, {
+      type: 'edit_message',
+      chatJid,
+      messageId: args.message_id,
+      text: args.text,
+      groupFolder,
+      timestamp: new Date().toISOString(),
+    });
+    return { content: [{ type: 'text' as const, text: 'Message updated.' }] };
   },
 );
 

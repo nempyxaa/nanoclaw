@@ -271,10 +271,10 @@ export class TelegramChannel implements Channel {
     );
   }
 
-  async sendMessage(jid: string, text: string): Promise<void> {
+  async sendMessage(jid: string, text: string): Promise<string | undefined> {
     if (!this.bot) {
       logger.warn('Telegram bot not initialized');
-      return;
+      return undefined;
     }
 
     try {
@@ -290,19 +290,42 @@ export class TelegramChannel implements Channel {
               (_, i) => text.slice(i * MAX_LENGTH, (i + 1) * MAX_LENGTH),
             );
 
+      let firstMessageId: string | undefined;
       for (const chunk of chunks) {
         try {
-          await this.bot.api.sendMessage(numericId, chunk, {
+          const sent = await this.bot.api.sendMessage(numericId, chunk, {
             parse_mode: 'Markdown',
           });
+          if (!firstMessageId) firstMessageId = sent.message_id.toString();
         } catch {
           // Markdown parsing failed (unmatched * or _) — send as plain text
-          await this.bot.api.sendMessage(numericId, chunk);
+          const sent = await this.bot.api.sendMessage(numericId, chunk);
+          if (!firstMessageId) firstMessageId = sent.message_id.toString();
         }
       }
       logger.info({ jid, length: text.length }, 'Telegram message sent');
+      return firstMessageId;
     } catch (err) {
       logger.error({ jid, err }, 'Failed to send Telegram message');
+      return undefined;
+    }
+  }
+
+  async editMessage(jid: string, messageId: string, text: string): Promise<void> {
+    if (!this.bot) {
+      logger.warn('Telegram bot not initialized');
+      return;
+    }
+
+    const numericId = jid.replace(/^tg:/, '');
+    try {
+      await this.bot.api.editMessageText(numericId, parseInt(messageId, 10), text, { parse_mode: 'Markdown' });
+    } catch {
+      try {
+        await this.bot.api.editMessageText(numericId, parseInt(messageId, 10), text);
+      } catch (err) {
+        logger.error({ jid, messageId, err }, 'Failed to edit Telegram message');
+      }
     }
   }
 

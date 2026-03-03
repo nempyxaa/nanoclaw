@@ -16,7 +16,8 @@ import { logger } from './logger.js';
 import { RegisteredGroup } from './types.js';
 
 export interface IpcDeps {
-  sendMessage: (jid: string, text: string) => Promise<void>;
+  sendMessage: (jid: string, text: string) => Promise<string | undefined>;
+  editMessage: (jid: string, messageId: string, text: string) => Promise<void>;
   registeredGroups: () => Record<string, RegisteredGroup>;
   registerGroup: (jid: string, group: RegisteredGroup) => void;
   syncGroupMetadata: (force: boolean) => Promise<void>;
@@ -79,15 +80,41 @@ export function startIpcWatcher(deps: IpcDeps): void {
                   isMain ||
                   (targetGroup && targetGroup.folder === sourceGroup)
                 ) {
-                  await deps.sendMessage(data.chatJid, data.text);
+                  const messageId = await deps.sendMessage(data.chatJid, data.text);
                   logger.info(
                     { chatJid: data.chatJid, sourceGroup },
                     'IPC message sent',
                   );
+                  // Write response file so MCP tool can retrieve message_id
+                  if (data.requestId && messageId) {
+                    const responsesDir = path.join(ipcBaseDir, sourceGroup, 'responses');
+                    fs.mkdirSync(responsesDir, { recursive: true });
+                    const tmpPath = path.join(responsesDir, `${data.requestId}.json.tmp`);
+                    const finalPath = path.join(responsesDir, `${data.requestId}.json`);
+                    fs.writeFileSync(tmpPath, JSON.stringify({ messageId }));
+                    fs.renameSync(tmpPath, finalPath);
+                  }
                 } else {
                   logger.warn(
                     { chatJid: data.chatJid, sourceGroup },
                     'Unauthorized IPC message attempt blocked',
+                  );
+                }
+              } else if (data.type === 'edit_message' && data.chatJid && data.messageId && data.text) {
+                const targetGroup = registeredGroups[data.chatJid];
+                if (
+                  isMain ||
+                  (targetGroup && targetGroup.folder === sourceGroup)
+                ) {
+                  await deps.editMessage(data.chatJid, data.messageId, data.text);
+                  logger.info(
+                    { chatJid: data.chatJid, messageId: data.messageId, sourceGroup },
+                    'IPC message edited',
+                  );
+                } else {
+                  logger.warn(
+                    { chatJid: data.chatJid, sourceGroup },
+                    'Unauthorized IPC edit_message attempt blocked',
                   );
                 }
               }
