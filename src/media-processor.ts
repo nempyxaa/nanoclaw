@@ -37,16 +37,20 @@ export class MediaProcessor {
     return filepath;
   }
 
-  async analyzeImage(imageBuffer: Buffer, mimeType: string, caption?: string): Promise<string> {
+  async analyzeImage(
+    imageBuffer: Buffer,
+    mimeType: string,
+    caption?: string,
+  ): Promise<string> {
     try {
       // Convert image to base64
       const base64Image = imageBuffer.toString('base64');
-      
+
       // Create prompt
-      const prompt = caption 
+      const prompt = caption
         ? `Describe this image. User caption: ${caption}`
         : 'Describe this image in detail.';
-      
+
       // Call OpenAI Vision API
       const response = await this.getOpenAI().chat.completions.create({
         model: 'gpt-4o',
@@ -70,19 +74,20 @@ export class MediaProcessor {
       const description = response.choices[0]?.message?.content || '';
 
       // Always prepend @Gevo for photo messages so they trigger the bot
-      const photoContent = description
-        ? `[Photo: ${description}]`
-        : '[Photo]';
+      const photoContent = description ? `[Photo: ${description}]` : '[Photo]';
 
       const content = `@${ASSISTANT_NAME} ${photoContent}`;
 
       return `${content}${caption ? ` Caption: ${caption}` : ''}`;
     } catch (error: any) {
-      logger.error({ 
-        error: error?.message || String(error),
-        stack: error?.stack,
-      }, 'Failed to analyze image with OpenAI Vision');
-      
+      logger.error(
+        {
+          error: error?.message || String(error),
+          stack: error?.stack,
+        },
+        'Failed to analyze image with OpenAI Vision',
+      );
+
       return `[Photo]${caption ? ` Caption: ${caption}` : ''}`;
     }
   }
@@ -91,7 +96,9 @@ export class MediaProcessor {
     try {
       const audioFile = await fs.readFile(audioPath);
       const audioBlob = new Blob([audioFile]);
-      const file = new File([audioBlob], path.basename(audioPath), { type: 'audio/ogg' });
+      const file = new File([audioBlob], path.basename(audioPath), {
+        type: 'audio/ogg',
+      });
 
       const transcription = await this.getOpenAI().audio.transcriptions.create({
         file: file as any,
@@ -102,18 +109,21 @@ export class MediaProcessor {
       await fs.unlink(audioPath).catch(() => {});
 
       const transcribedText = transcription.text;
-      
+
       // Always prepend @Gevo for voice messages so they trigger the bot
       const content = `@${ASSISTANT_NAME} [Voice message: ${transcribedText}]`;
 
       return `${content}${caption ? ` Caption: ${caption}` : ''}`;
     } catch (error: any) {
-      logger.error({ 
-        error: error?.message || String(error),
-        stack: error?.stack,
-        name: error?.name,
-        status: error?.status
-      }, 'Failed to transcribe voice');
+      logger.error(
+        {
+          error: error?.message || String(error),
+          stack: error?.stack,
+          name: error?.name,
+          status: error?.status,
+        },
+        'Failed to transcribe voice',
+      );
       await fs.unlink(audioPath).catch(() => {});
       return `[Voice message]${caption ? ` Caption: ${caption}` : ''}`;
     }

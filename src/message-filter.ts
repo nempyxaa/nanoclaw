@@ -18,7 +18,10 @@ export function shouldProcessMessage(
 
   // ALWAYS process: Explicit triggers
   if (TRIGGER_PATTERN.test(trimmed)) {
-    logger.debug({ content: trimmed.substring(0, 50) }, 'Message has trigger pattern');
+    logger.debug(
+      { content: trimmed.substring(0, 50) },
+      'Message has trigger pattern',
+    );
     return true;
   }
 
@@ -50,7 +53,7 @@ export function shouldProcessMessage(
     /^(hi|hey|hello|привет|пока|bye|thanks|спасибо)\s*(Igor|Andy|Piotr|Петя|Игорь)/i,
     /^(good morning|good night|доброе утро|спокойной ночи)/i,
   ];
-  if (casualPatterns.some(pattern => pattern.test(trimmed))) {
+  if (casualPatterns.some((pattern) => pattern.test(trimmed))) {
     logger.debug('Message is casual greeting between people');
     return false;
   }
@@ -66,7 +69,7 @@ export function shouldProcessMessage(
   const commandPatterns = [
     /^(create|make|show|explain|tell|describe|analyze|help|помоги|создай|покажи|расскажи|объясни)/i,
   ];
-  if (commandPatterns.some(pattern => pattern.test(trimmed))) {
+  if (commandPatterns.some((pattern) => pattern.test(trimmed))) {
     logger.debug('Message contains command verb');
     lastResponseTime.set(chatJid, Date.now());
     return true;
@@ -78,14 +81,17 @@ export function shouldProcessMessage(
     new RegExp(`\\b(you|your|тебя|твой|${botNameLower})\\b`, 'i'),
     /\b(that|this|it|это|то|этого)\b.*\b(was|is|правильно|верно|good|bad)\b/i,
   ];
-  if (followUpPatterns.some(pattern => pattern.test(trimmed))) {
+  if (followUpPatterns.some((pattern) => pattern.test(trimmed))) {
     logger.debug('Message appears to be follow-up or reference');
     lastResponseTime.set(chatJid, Date.now());
     return true;
   }
 
   // DEFAULT: Skip to save costs
-  logger.debug({ content: trimmed.substring(0, 50) }, 'Message does not match processing criteria, skipping');
+  logger.debug(
+    { content: trimmed.substring(0, 50) },
+    'Message does not match processing criteria, skipping',
+  );
   return false;
 }
 

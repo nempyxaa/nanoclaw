@@ -96,8 +96,15 @@ export class TelegramChannel implements Channel {
       }
 
       // Store chat metadata for discovery
-      const isGroup = ctx.chat.type === 'group' || ctx.chat.type === 'supergroup';
-      this.opts.onChatMetadata(chatJid, timestamp, chatName, 'telegram', isGroup);
+      const isGroup =
+        ctx.chat.type === 'group' || ctx.chat.type === 'supergroup';
+      this.opts.onChatMetadata(
+        chatJid,
+        timestamp,
+        chatName,
+        'telegram',
+        isGroup,
+      );
 
       // Only deliver full message for registered groups
       const group = this.opts.registeredGroups()[chatJid];
@@ -137,16 +144,16 @@ export class TelegramChannel implements Channel {
         const photo = ctx.message.photo[ctx.message.photo.length - 1];
         const file = await ctx.api.getFile(photo.file_id);
         const fileUrl = `https://api.telegram.org/file/bot${this.botToken}/${file.file_path}`;
-        
+
         // Download and analyze
         const response = await fetch(fileUrl);
         const imageBuffer = Buffer.from(await response.arrayBuffer());
         const caption = ctx.message.caption;
-        
+
         const content = await this.mediaProcessor.analyzeImage(
           imageBuffer,
           'image/jpeg',
-          caption
+          caption,
         );
 
         this.deliverMessage(ctx, chatJid, content);
@@ -167,15 +174,18 @@ export class TelegramChannel implements Channel {
         const voice = ctx.message.voice;
         const file = await ctx.api.getFile(voice.file_id);
         const fileUrl = `https://api.telegram.org/file/bot${this.botToken}/${file.file_path}`;
-        
+
         // Download voice file
         const filepath = await this.mediaProcessor.downloadFile(
           fileUrl,
-          `voice_${Date.now()}.ogg`
+          `voice_${Date.now()}.ogg`,
         );
-        
+
         const caption = ctx.message.caption;
-        const content = await this.mediaProcessor.transcribeVoice(filepath, caption);
+        const content = await this.mediaProcessor.transcribeVoice(
+          filepath,
+          caption,
+        );
 
         this.deliverMessage(ctx, chatJid, content);
       } catch (error) {
@@ -272,14 +282,22 @@ export class TelegramChannel implements Channel {
 
       // Telegram has a 4096 character limit per message — split if needed
       const MAX_LENGTH = 4096;
-      if (text.length <= MAX_LENGTH) {
-        await this.bot.api.sendMessage(numericId, text);
-      } else {
-        for (let i = 0; i < text.length; i += MAX_LENGTH) {
-          await this.bot.api.sendMessage(
-            numericId,
-            text.slice(i, i + MAX_LENGTH),
-          );
+      const chunks =
+        text.length <= MAX_LENGTH
+          ? [text]
+          : Array.from(
+              { length: Math.ceil(text.length / MAX_LENGTH) },
+              (_, i) => text.slice(i * MAX_LENGTH, (i + 1) * MAX_LENGTH),
+            );
+
+      for (const chunk of chunks) {
+        try {
+          await this.bot.api.sendMessage(numericId, chunk, {
+            parse_mode: 'Markdown',
+          });
+        } catch {
+          // Markdown parsing failed (unmatched * or _) — send as plain text
+          await this.bot.api.sendMessage(numericId, chunk);
         }
       }
       logger.info({ jid, length: text.length }, 'Telegram message sent');
