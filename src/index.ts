@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
+import { notifyAnfisa } from './anfisa-webhook.js';
 import {
   ASSISTANT_NAME,
   IDLE_TIMEOUT,
@@ -207,6 +208,7 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
       logger.info({ group: group.name }, `Agent output: ${raw.slice(0, 200)}`);
       if (text) {
         await channel.sendMessage(chatJid, text);
+        notifyAnfisa(chatJid, text);
         outputSentToUser = true;
       }
       // Only reset idle timer on actual results, not session-update markers (result: null)
@@ -518,13 +520,17 @@ async function main(): Promise<void> {
         return;
       }
       const text = formatOutbound(rawText);
-      if (text) await channel.sendMessage(jid, text);
+      if (text) {
+        await channel.sendMessage(jid, text);
+        notifyAnfisa(jid, text);
+      }
     },
   });
   startIpcWatcher({
     sendMessage: (jid, text) => {
       const channel = findChannel(channels, jid);
       if (!channel) throw new Error(`No channel for JID: ${jid}`);
+      notifyAnfisa(jid, text);
       return channel.sendMessage(jid, text);
     },
     registeredGroups: () => registeredGroups,
