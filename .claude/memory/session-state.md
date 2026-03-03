@@ -1,35 +1,29 @@
-# Session State (last updated: 2026-03-01)
+# Session State (last updated: 2026-03-04)
 
 ## Status: PAUSED
 
-## Project: Connect NanoClaw to gogcli (Google Services)
+## Project: Gevo Tasks 2-8
 
-Add all Google services as tools available to NanoClaw agents via gogcli CLI.
-4 Google accounts: personal, work-ai, work-lokalise, personal2.
+Implementing features from `/groups/igor-andy-piotr-gevo/claude_code_brief.md`.
 
 ## Completed
-- Phase 1: gogcli binary install added to `container/Dockerfile`
-- Phase 2: Config mount + `GOG_KEYRING_PASSWORD` env var in `src/container-runner.ts`
-- Phase 3: `container/skills/google/SKILL.md` created with full command reference
-- Committed and pushed: `400f7d2 feat: add Google services (gogcli) integration`
-- Phase 0 partial: gogcli v0.11.0 installed on VPS, file-based keyring configured
-- Parallel AI: deployed and live (`3a23978`), API key in VPS .env
+- **Task 2: Daily Briefing** — `daily-briefing-001` inserted into `scheduled_tasks` (cron `0 9 * * *`, Europe/Amsterdam), group `igor-andy-piotr-gevo`, chat_jid `tg:-4908788189`
+- **Task 3: Smart Reminders** — `container/skills/reminders/SKILL.md` created
+- **Task 5: Knowledge Base** — `container/skills/knowledge-base/SKILL.md` created
+- **Task 6: Agent Swarms** — `container/skills/swarms/SKILL.md` created
+- **Task 7: Anfisa Webhook** — `src/anfisa-webhook.ts` + hooks in `src/index.ts` (3 call sites: streaming output, scheduler sendMessage, IPC sendMessage). Needs `ANFISA_WEBHOOK_URL` in `.env` when Anfisa's endpoint is ready.
+- **Task 8: Remotion** — `container/skills/remotion/SKILL.md` + `@remotion/cli` added to Dockerfile. Container rebuild needed for Remotion CLI.
+- Committed: `06d8eed feat: implement Gevo tasks 3, 5-8`
+- Deployed to VPS: pulled, built, service restarted
 
-## Not Yet Done (Phase 0 continues)
-- User needs to create GCP OAuth Desktop App credentials (client_secret.json)
-- `gog auth credentials <path>` on VPS
-- Set a keyring password (will be stored in .env)
-- Auth 4 accounts with `--manual`:
-  - `gog auth add pantropov@gmail.com --manual`
-  - `gog auth add piotr.a@wonderful.ai --manual` (Okta SSO)
-  - `gog auth add petr@lokalise.com --manual` (Okta SSO)
-  - `gog auth add stul4ak@gmail.com --manual`
-- Set aliases (personal, work-ai, work-lokalise, personal2)
-- Add `GOG_KEYRING_PASSWORD=<password>` to `/root/nanoclaw/.env`
-- Phase 4/5 done for Parallel AI (deployed, service restarted)
-- gogcli Phase 0 remaining: GCP OAuth credentials, auth 4 accounts, set aliases, keyring password
-- gogcli Phase 4: container already has the binary, just needs rebuild after auth setup
+## Not Yet Done
+- **Task 4: Cross-Context RAG** — Deferred. Needs: `@huggingface/transformers` in agent-runner, `rag.ts` CLI tool, skill file, container rebuild.
+- **Task 8 container rebuild** — `./container/build.sh` on VPS to install Remotion CLI in image
+- **Anfisa webhook URL** — Needs actual URL from Anfisa's owner, add to VPS `.env`
+- **gogcli auth** — Still needs GCP OAuth credentials, 4 account auths, keyring password (from previous session)
 
 ## Connections
 - VPS: `ssh root@187.77.108.22` (Hostinger, Ubuntu)
 - NanoClaw repo: `~/nanoclaw`
+- Gevo group JID: `tg:-4908788189`
+- Gevo group folder: `igor-andy-piotr-gevo`

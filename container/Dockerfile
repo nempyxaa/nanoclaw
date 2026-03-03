@@ -52,6 +52,10 @@ COPY agent-runner/ ./
 # Build TypeScript
 RUN npm run build
 
+# Pre-download embedding model for RAG
+ENV TRANSFORMERS_CACHE=/app/.cache/transformers
+RUN node -e "import('@huggingface/transformers').then(m => m.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2')).then(() => console.log('Model cached'))"
+
 # Create workspace directories
 RUN mkdir -p /workspace/group /workspace/global /workspace/extra /workspace/ipc/messages /workspace/ipc/tasks /workspace/ipc/input
 
