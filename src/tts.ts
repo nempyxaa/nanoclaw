@@ -33,12 +33,18 @@ export async function sendVoiceDuplicate(
       voiceText = await mediaProcessor.summarizeForVoice(cleanText);
     }
 
+    logger.info(
+      { jid, voiceTextLen: voiceText.length, summarized: cleanText.length >= threshold },
+      'Synthesizing voice',
+    );
+
     // OpenAI TTS max input is 4096 chars
     const audio = await mediaProcessor.synthesizeVoice(
       voiceText.slice(0, 4096),
       voiceConfig.voice,
     );
     await channel.sendVoice(jid, audio);
+    logger.info({ jid, audioSize: audio.length }, 'Voice duplicate sent');
   } catch (err) {
     logger.error({ jid, err }, 'Failed to send voice duplicate');
   }
@@ -65,10 +71,12 @@ export function createEditVoiceDebouncer(
       const existing = timers.get(messageId);
       if (existing) clearTimeout(existing);
 
+      logger.debug({ messageId, delayMs }, 'Voice debouncer scheduled');
       timers.set(
         messageId,
         setTimeout(async () => {
           timers.delete(messageId);
+          logger.info({ messageId, jid }, 'Voice debouncer firing');
           await sendVoiceDuplicate(
             channel,
             jid,
