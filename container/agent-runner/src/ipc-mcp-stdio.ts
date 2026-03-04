@@ -42,8 +42,10 @@ function waitForResponse(filePath: string, timeoutMs: number): Promise<string | 
       try {
         if (fs.existsSync(filePath)) {
           const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-          fs.unlinkSync(filePath);
-          resolve(data.messageId || null);
+          // Resolve before cleanup — unlink may fail (permissions) and must not block
+          const messageId = data.messageId || null;
+          try { fs.unlinkSync(filePath); } catch { /* best-effort cleanup */ }
+          resolve(messageId);
           return;
         }
       } catch { /* retry */ }
