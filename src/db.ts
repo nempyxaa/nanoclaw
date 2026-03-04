@@ -129,9 +129,7 @@ function createSchema(database: Database.Database): void {
 
   // Add voice_config column if it doesn't exist
   try {
-    database.exec(
-      `ALTER TABLE registered_groups ADD COLUMN voice_config TEXT`,
-    );
+    database.exec(`ALTER TABLE registered_groups ADD COLUMN voice_config TEXT`);
   } catch {
     /* column already exists */
   }
@@ -559,9 +557,7 @@ export function getRegisteredGroup(
     containerConfig: row.container_config
       ? JSON.parse(row.container_config)
       : undefined,
-    voiceConfig: row.voice_config
-      ? JSON.parse(row.voice_config)
-      : undefined,
+    voiceConfig: row.voice_config ? JSON.parse(row.voice_config) : undefined,
     requiresTrigger:
       row.requires_trigger === null ? undefined : row.requires_trigger === 1,
   };
@@ -614,9 +610,7 @@ export function getAllRegisteredGroups(): Record<string, RegisteredGroup> {
       containerConfig: row.container_config
         ? JSON.parse(row.container_config)
         : undefined,
-      voiceConfig: row.voice_config
-        ? JSON.parse(row.voice_config)
-        : undefined,
+      voiceConfig: row.voice_config ? JSON.parse(row.voice_config) : undefined,
       requiresTrigger:
         row.requires_trigger === null ? undefined : row.requires_trigger === 1,
     };

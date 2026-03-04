@@ -215,7 +215,13 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
         notifyAnfisa(chatJid, text);
         outputSentToUser = true;
         if (group.voiceConfig?.enabled) {
-          sendVoiceDuplicate(channel, chatJid, text, group.voiceConfig, ttsProcessor).catch(() => {});
+          sendVoiceDuplicate(
+            channel,
+            chatJid,
+            text,
+            group.voiceConfig,
+            ttsProcessor,
+          ).catch(() => {});
         }
       }
       // Only reset idle timer on actual results, not session-update markers (result: null)
@@ -533,7 +539,13 @@ async function main(): Promise<void> {
         notifyAnfisa(jid, text);
         const group = registeredGroups[jid];
         if (group?.voiceConfig?.enabled) {
-          sendVoiceDuplicate(channel, jid, text, group.voiceConfig, ttsProcessor).catch(() => {});
+          sendVoiceDuplicate(
+            channel,
+            jid,
+            text,
+            group.voiceConfig,
+            ttsProcessor,
+          ).catch(() => {});
         }
       }
     },
@@ -553,7 +565,13 @@ async function main(): Promise<void> {
       await channel.editMessage(jid, messageId, text);
       const group = registeredGroups[jid];
       if (group?.voiceConfig?.enabled) {
-        editVoiceDebouncer.schedule(messageId, jid, text, group.voiceConfig, channel);
+        editVoiceDebouncer.schedule(
+          messageId,
+          jid,
+          text,
+          group.voiceConfig,
+          channel,
+        );
       }
     },
     registeredGroups: () => registeredGroups,

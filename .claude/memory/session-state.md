@@ -24,6 +24,15 @@ Implementing features from `/groups/igor-andy-piotr-gevo/claude_code_brief.md`.
   - Gevo CLAUDE.md updated: status message → edits → final answer replaces status
   - **Bug fixed**: `waitForResponse` failed silently due to EACCES on unlink (host writes as root, container runs as node). Fix: resolve before cleanup.
   - Tested end-to-end: agent sends status, edits it with full answer. Confirmed in logs.
+- **TTS Voice Duplication** — Implemented and deployed:
+  - `src/media-processor.ts`: `synthesizeVoice` (OpenAI TTS tts-1, opus format), `summarizeForVoice` (GPT-4o-mini)
+  - `src/tts.ts`: `sendVoiceDuplicate` (< 200 chars → full voice, ≥ 200 chars → summary voice), `createEditVoiceDebouncer` (5s debounce for edit-in-place pattern)
+  - `src/channels/telegram.ts`: `sendVoice` via grammy InputFile, 🔊 reply handler (reply with 🔊 to get full voice of any bot message)
+  - `src/types.ts`: `VoiceConfig` interface, `sendVoice?` on Channel, `voiceConfig?` on RegisteredGroup
+  - `src/db.ts`: `voice_config TEXT` column migration, read/write in group CRUD
+  - `src/index.ts`: voice on streaming output + scheduler sendMessage, edit voice debouncer on IPC editMessage
+  - Both Gevo group and main DM have voice enabled (alloy voice, 200 char threshold)
+  - Tested end-to-end: IPC send → edit → 5s debounce → TTS → voice sent to group
 - Container image rebuilt with all changes
 - All deployed to VPS, service running
 
@@ -36,6 +45,7 @@ Implementing features from `/groups/igor-andy-piotr-gevo/claude_code_brief.md`.
 - `95fe8e6` feat: add edit_message MCP tool for live status updates
 - `18395d9` fix: Anfisa webhook payload format and auth header
 - `c5f7cfb` fix: response file permissions and waitForResponse error handling
+- `365769a` feat: add TTS voice duplication for Telegram messages
 
 ## Connections
 - VPS: `ssh root@187.77.108.22` (Hostinger, Ubuntu)

@@ -34,7 +34,11 @@ export async function sendVoiceDuplicate(
     }
 
     logger.info(
-      { jid, voiceTextLen: voiceText.length, summarized: cleanText.length >= threshold },
+      {
+        jid,
+        voiceTextLen: voiceText.length,
+        summarized: cleanText.length >= threshold,
+      },
       'Synthesizing voice',
     );
 
