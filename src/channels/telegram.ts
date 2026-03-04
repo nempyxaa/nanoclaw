@@ -311,7 +311,11 @@ export class TelegramChannel implements Channel {
     }
   }
 
-  async editMessage(jid: string, messageId: string, text: string): Promise<void> {
+  async editMessage(
+    jid: string,
+    messageId: string,
+    text: string,
+  ): Promise<void> {
     if (!this.bot) {
       logger.warn('Telegram bot not initialized');
       return;
@@ -319,12 +323,24 @@ export class TelegramChannel implements Channel {
 
     const numericId = jid.replace(/^tg:/, '');
     try {
-      await this.bot.api.editMessageText(numericId, parseInt(messageId, 10), text, { parse_mode: 'Markdown' });
+      await this.bot.api.editMessageText(
+        numericId,
+        parseInt(messageId, 10),
+        text,
+        { parse_mode: 'Markdown' },
+      );
     } catch {
       try {
-        await this.bot.api.editMessageText(numericId, parseInt(messageId, 10), text);
+        await this.bot.api.editMessageText(
+          numericId,
+          parseInt(messageId, 10),
+          text,
+        );
       } catch (err) {
-        logger.error({ jid, messageId, err }, 'Failed to edit Telegram message');
+        logger.error(
+          { jid, messageId, err },
+          'Failed to edit Telegram message',
+        );
       }
     }
   }

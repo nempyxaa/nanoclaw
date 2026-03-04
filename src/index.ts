@@ -536,7 +536,8 @@ async function main(): Promise<void> {
     editMessage: async (jid, messageId, text) => {
       const channel = findChannel(channels, jid);
       if (!channel) throw new Error(`No channel for JID: ${jid}`);
-      if (!channel.editMessage) throw new Error(`Channel ${channel.name} doesn't support editing`);
+      if (!channel.editMessage)
+        throw new Error(`Channel ${channel.name} doesn't support editing`);
       await channel.editMessage(jid, messageId, text);
     },
     registeredGroups: () => registeredGroups,
