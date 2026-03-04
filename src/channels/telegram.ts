@@ -60,9 +60,13 @@ export class TelegramChannel implements Channel {
 
       const chatJid = `tg:${ctx.chat.id}`;
 
-      // Handle 🔊 reply — synthesize full voice for the replied message
+      // Handle full voice request — reply to bot message with 🔊 or voice commands
+      const trimmed = ctx.message.text.trim().toLowerCase();
+      const isVoiceRequest =
+        trimmed === '🔊' ||
+        /^(озвуч|войс|voice|полная озвучка|full voice|read aloud|прочитай)/i.test(trimmed);
       if (
-        ctx.message.text.trim() === '🔊' &&
+        isVoiceRequest &&
         ctx.message.reply_to_message?.text
       ) {
         const group = this.opts.registeredGroups()[chatJid];
