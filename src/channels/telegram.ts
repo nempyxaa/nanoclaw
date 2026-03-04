@@ -64,11 +64,10 @@ export class TelegramChannel implements Channel {
       const trimmed = ctx.message.text.trim().toLowerCase();
       const isVoiceRequest =
         trimmed === '🔊' ||
-        /^(озвуч|войс|voice|полная озвучка|full voice|read aloud|прочитай)/i.test(trimmed);
-      if (
-        isVoiceRequest &&
-        ctx.message.reply_to_message?.text
-      ) {
+        /^(озвуч|войс|voice|полная озвучка|full voice|read aloud|прочитай)/i.test(
+          trimmed,
+        );
+      if (isVoiceRequest && ctx.message.reply_to_message?.text) {
         const group = this.opts.registeredGroups()[chatJid];
         if (group?.voiceConfig?.enabled) {
           const replyText = ctx.message.reply_to_message.text;
