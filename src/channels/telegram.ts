@@ -1,4 +1,4 @@
-import { Bot } from 'grammy';
+import { Bot, InputFile } from 'grammy';
 
 import { ASSISTANT_NAME, TRIGGER_PATTERN } from '../config.js';
 import { logger } from '../logger.js';
@@ -59,6 +59,27 @@ export class TelegramChannel implements Channel {
       if (ctx.message.text.startsWith('/')) return;
 
       const chatJid = `tg:${ctx.chat.id}`;
+
+      // Handle 🔊 reply — synthesize full voice for the replied message
+      if (
+        ctx.message.text.trim() === '🔊' &&
+        ctx.message.reply_to_message?.text
+      ) {
+        const group = this.opts.registeredGroups()[chatJid];
+        if (group?.voiceConfig?.enabled) {
+          const replyText = ctx.message.reply_to_message.text;
+          try {
+            const audio = await this.mediaProcessor.synthesizeVoice(
+              replyText.slice(0, 4096),
+              group.voiceConfig.voice,
+            );
+            await this.sendVoice(chatJid, audio);
+          } catch (err) {
+            logger.error({ err }, 'Failed to handle 🔊 reply');
+          }
+          return;
+        }
+      }
       let content = ctx.message.text;
       const timestamp = new Date(ctx.message.date * 1000).toISOString();
       const senderName =
@@ -342,6 +363,22 @@ export class TelegramChannel implements Channel {
           'Failed to edit Telegram message',
         );
       }
+    }
+  }
+
+  async sendVoice(jid: string, audioBuffer: Buffer): Promise<void> {
+    if (!this.bot) {
+      logger.warn('Telegram bot not initialized');
+      return;
+    }
+    const numericId = jid.replace(/^tg:/, '');
+    try {
+      await this.bot.api.sendVoice(
+        numericId,
+        new InputFile(audioBuffer, 'voice.ogg'),
+      );
+    } catch (err) {
+      logger.error({ jid, err }, 'Failed to send voice message');
     }
   }
 

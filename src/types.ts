@@ -32,12 +32,19 @@ export interface ContainerConfig {
   timeout?: number; // Default: 300000 (5 minutes)
 }
 
+export interface VoiceConfig {
+  enabled: boolean;
+  voice: string; // OpenAI TTS voice: alloy, echo, fable, onyx, nova, shimmer
+  summaryThreshold?: number; // chars above which to summarize (default: 200)
+}
+
 export interface RegisteredGroup {
   name: string;
   folder: string;
   trigger: string;
   added_at: string;
   containerConfig?: ContainerConfig;
+  voiceConfig?: VoiceConfig;
   requiresTrigger?: boolean; // Default: true for groups, false for solo chats
 }
 
@@ -83,6 +90,7 @@ export interface Channel {
   connect(): Promise<void>;
   sendMessage(jid: string, text: string): Promise<string | undefined>;
   editMessage?(jid: string, messageId: string, text: string): Promise<void>;
+  sendVoice?(jid: string, audioBuffer: Buffer): Promise<void>;
   isConnected(): boolean;
   ownsJid(jid: string): boolean;
   disconnect(): Promise<void>;

@@ -44,8 +44,10 @@ import { resolveGroupFolderPath } from './group-folder.js';
 import { startIpcWatcher } from './ipc.js';
 import { findChannel, formatMessages, formatOutbound } from './router.js';
 import { startSchedulerLoop } from './task-scheduler.js';
+import { createEditVoiceDebouncer, sendVoiceDuplicate } from './tts.js';
 import { Channel, NewMessage, RegisteredGroup } from './types.js';
 import { logger } from './logger.js';
+import { MediaProcessor } from './media-processor.js';
 
 // Re-export for backwards compatibility during refactor
 export { escapeXml, formatMessages } from './router.js';
@@ -59,6 +61,8 @@ let messageLoopRunning = false;
 let whatsapp: WhatsAppChannel;
 const channels: Channel[] = [];
 const queue = new GroupQueue();
+const ttsProcessor = new MediaProcessor();
+const editVoiceDebouncer = createEditVoiceDebouncer(ttsProcessor);
 
 function loadState(): void {
   lastTimestamp = getRouterState('last_timestamp') || '';
@@ -210,6 +214,9 @@ async function processGroupMessages(chatJid: string): Promise<boolean> {
         await channel.sendMessage(chatJid, text);
         notifyAnfisa(chatJid, text);
         outputSentToUser = true;
+        if (group.voiceConfig?.enabled) {
+          sendVoiceDuplicate(channel, chatJid, text, group.voiceConfig, ttsProcessor).catch(() => {});
+        }
       }
       // Only reset idle timer on actual results, not session-update markers (result: null)
       resetIdleTimer();
@@ -469,6 +476,7 @@ async function main(): Promise<void> {
   initDatabase();
   logger.info('Database initialized');
   loadState();
+  await ttsProcessor.init();
 
   // Graceful shutdown handlers
   const shutdown = async (signal: string) => {
@@ -523,6 +531,10 @@ async function main(): Promise<void> {
       if (text) {
         await channel.sendMessage(jid, text);
         notifyAnfisa(jid, text);
+        const group = registeredGroups[jid];
+        if (group?.voiceConfig?.enabled) {
+          sendVoiceDuplicate(channel, jid, text, group.voiceConfig, ttsProcessor).catch(() => {});
+        }
       }
     },
   });
@@ -539,6 +551,10 @@ async function main(): Promise<void> {
       if (!channel.editMessage)
         throw new Error(`Channel ${channel.name} doesn't support editing`);
       await channel.editMessage(jid, messageId, text);
+      const group = registeredGroups[jid];
+      if (group?.voiceConfig?.enabled) {
+        editVoiceDebouncer.schedule(messageId, jid, text, group.voiceConfig, channel);
+      }
     },
     registeredGroups: () => registeredGroups,
     registerGroup,

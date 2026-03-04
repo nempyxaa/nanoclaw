@@ -128,4 +128,33 @@ export class MediaProcessor {
       return `[Voice message]${caption ? ` Caption: ${caption}` : ''}`;
     }
   }
+
+  async synthesizeVoice(
+    text: string,
+    voice: string = 'alloy',
+  ): Promise<Buffer> {
+    const response = await this.getOpenAI().audio.speech.create({
+      model: 'tts-1',
+      voice: voice as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer',
+      input: text,
+      response_format: 'opus',
+    });
+    return Buffer.from(await response.arrayBuffer());
+  }
+
+  async summarizeForVoice(text: string): Promise<string> {
+    const response = await this.getOpenAI().chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Summarize the following text in 30-50 words. Keep the same language as the original. Be concise and capture the key points.',
+        },
+        { role: 'user', content: text },
+      ],
+      max_tokens: 100,
+    });
+    return response.choices[0]?.message?.content || text.slice(0, 200);
+  }
 }
